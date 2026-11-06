@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de cigarros</title>
+<style>
+:root{--bg:#eef3f0;--card:#fff;--tx:#17201c;--mu:#6a7a72;--ac:#1f9d6e;--ac2:#127a54;--bd:#e1e9e4;--bad:#c4473b;--soft:#e6f4ed;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101513;--card:#1a211e;--tx:#eaf2ee;--mu:#93a39a;--ac:#3fd09a;--ac2:#1f9d6e;--bd:#2a352f;--bad:#f08074;--soft:#1f2d27;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 16px 32px}
+h1{font-size:1.4rem;margin:6px 0 16px;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0 0 12px}
+.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.hero{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;text-align:center;padding:22px 16px}
+.hero small{opacity:.85;font-size:.85rem}
+.hero .total{font-size:2.6rem;font-weight:800;margin:4px 0;letter-spacing:-.02em}
+.hero .info{opacity:.9;font-size:.85rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pill{background:var(--soft);border-radius:14px;padding:12px;text-align:center}
+.pill b{display:block;font-size:1.5rem;color:var(--ac)}
+.pill span{font-size:.78rem;color:var(--mu)}
+label{display:block;font-size:.8rem;color:var(--mu);margin-bottom:4px}
+input{width:100%;padding:12px;border:1.5px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font-size:1rem}
+input:focus{outline:2px solid var(--ac);border-color:transparent}
+button{font:inherit;border:0;border-radius:14px;padding:12px;background:var(--ac);color:#fff;font-weight:600;width:100%}
+button:active{transform:scale(.98)}
+button.big{font-size:1.25rem;padding:20px;margin-bottom:14px;box-shadow:0 6px 16px rgba(31,157,110,.35)}
+button.sm{background:none;color:var(--bad);width:auto;padding:2px 8px}
+details summary{font-weight:600;cursor:pointer;list-style:none}
+details summary::after{content:" ▾";color:var(--mu)}
+details .grid,details>div{margin-top:12px}
+.row{display:flex;gap:8px;margin-top:12px}
+.scroll{overflow:auto;max-height:300px;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--bd)}
+th{color:var(--mu);font-weight:600;font-size:.75rem;text-transform:uppercase;position:sticky;top:0;background:var(--card)}
+.pos{color:var(--ac);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.sum{display:flex;justify-content:space-between;align-items:center;background:var(--soft);border-radius:14px;padding:12px 14px;margin-top:12px;font-weight:700}
+.sum span:first-child{font-weight:500;color:var(--mu);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<h1>🚭 Control de cigarros</h1>
+
+<div class="card hero">
+  <small>Ahorro total</small>
+  <div class="total" id="total">0,00</div>
+  <div class="info" id="totalInfo"></div>
+</div>
+
+<div class="card">
+  <button class="big" id="smoke">🚬 Fumé un cigarro</button>
+  <div class="grid">
+    <div class="pill"><b id="today">0</b><span>fumados hoy</span></div>
+    <div class="pill"><b id="since">—</b><span>desde el último</span></div>
+  </div>
+  <div class="row"><input id="manual" type="datetime-local"><button id="addManual" style="width:auto;padding:10px 16px">Agregar</button></div>
+</div>
+
+<div class="card">
+  <h2>📅 Ahorro por día</h2>
+  <div class="scroll"><table><thead><tr><th>Día</th><th>Fumados</th><th>Ahorro</th><th>Acum.</th></tr></thead><tbody id="days"></tbody></table></div>
+  <div class="sum"><span>Total (<b id="nd">0</b> días · <b id="ns">0</b> fumados)</span><span id="sumTot" class="pos">0,00</span></div>
+</div>
+
+<div class="card">
+  <h2>🕒 Registro de cigarros</h2>
+  <div class="scroll"><table><thead><tr><th>Día/mes/año y hora</th><th>Desde el anterior</th><th></th></tr></thead><tbody id="log"></tbody></table></div>
+</div>
+
+<div class="card">
+  <details open>
+    <summary>⚙️ Configuración</summary>
+    <div class="grid">
+      <div><label for="perPack">Cigarros por paquete</label><input id="perPack" type="number" inputmode="numeric" min="1"></div>
+      <div><label for="price">Precio del paquete</label><input id="price" type="number" inputmode="decimal" min="0" step="0.01"></div>
+    </div>
+    <div><label for="base">Cigarros que fumaba por día (antes)</label><input id="base" type="number" inputmode="numeric" min="0"></div>
+  </details>
+</div>
+</main>
+
+<script>
+var cfg={perPack:20,price:0,base:0},logs=[];
+function load(){try{var c=localStorage.getItem("cfg"),l=localStorage.getItem("logs");if(c)cfg=Object.assign(cfg,JSON.parse(c));if(l)logs=JSON.parse(l)}catch(e){}}
+function save(){try{localStorage.setItem("cfg",JSON.stringify(cfg));localStorage.setItem("logs",JSON.stringify(logs))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function key(t){var d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function dur(ms){var m=Math.floor(ms/60000);if(m<1)return "menos de 1 min";var h=Math.floor(m/60),r=m%60;if(h>=24){var d=Math.floor(h/24);return d+" d "+(h%24)+" h"}return h?h+" h "+r+" min":r+" min"}
+function money(n){return n.toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fdate(t){return new Date(t).toLocaleString("es",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false})}
+function render(){
+  logs.sort(function(a,b){return a-b});
+  var perCig=cfg.perPack>0?cfg.price/cfg.perPack:0,tk=key(Date.now());
+  var counts={};logs.forEach(function(t){var k=key(t);counts[k]=(counts[k]||0)+1});
+  $("today").textContent=counts[tk]||0;
+  updSince();
+  var h="";
+  for(var i=logs.length-1;i>=0;i--){h+="<tr><td>"+fdate(logs[i])+"</td><td>"+(i>0?dur(logs[i]-logs[i-1]):"—")+"</td><td><button class='sm' data-i='"+i+"'>✕</button></td></tr>"}
+  $("log").innerHTML=h||"<tr><td colspan='3' style='color:var(--mu)'>Aún no hay registros</td></tr>";
+  var rows=[],total=0,smoked=0;
+  if(logs.length){
+    var d=new Date(logs[0]);d.setHours(12,0,0,0);var end=new Date();end.setHours(12,0,0,0);
+    while(d<=end){var k=key(d),c=counts[k]||0,s=(cfg.base-c)*perCig;total+=s;smoked+=c;rows.push({k:k,c:c,s:s,a:total});d.setDate(d.getDate()+1)}
+  }
+  var dh="";
+  for(var j=rows.length-1;j>=0;j--){var r=rows[j];dh+="<tr><td>"+r.k.split("-").reverse().join("/")+"</td><td>"+r.c+"</td><td class='"+(r.s>=0?"pos":"neg")+"'>"+money(r.s)+"</td><td>"+money(r.a)+"</td></tr>"}
+  $("days").innerHTML=dh||"<tr><td colspan='4' style='color:var(--mu)'>Registra tu primer cigarro para empezar</td></tr>";
+  $("total").textContent=money(total);
+  $("sumTot").textContent=money(total);$("sumTot").className=total>=0?"pos":"neg";
+  $("nd").textContent=rows.length;$("ns").textContent=smoked;
+  $("totalInfo").textContent=rows.length?("En "+rows.length+" día(s) · cada cigarro cuesta "+money(perCig)):"Completa la configuración abajo";
+}
+function updSince(){$("since").textContent=logs.length?dur(Date.now()-logs[logs.length-1]):"—"}
+function readCfg(){cfg.perPack=parseFloat($("perPack").value)||0;cfg.price=parseFloat($("price").value)||0;cfg.base=parseFloat($("base").value)||0;save();render()}
+load();
+$("perPack").value=cfg.perPack;$("price").value=cfg.price||"";$("base").value=cfg.base||"";
+["perPack","price","base"].forEach(function(i){$(i).addEventListener("input",readCfg)});
+$("smoke").onclick=function(){logs.push(Date.now());save();render()};
+$("addManual").onclick=function(){var v=$("manual").value;if(!v)return;logs.push(new Date(v).getTime());$("manual").value="";save();render()};
+$("log").onclick=function(e){var i=e.target.getAttribute("data-i");if(i!==null){logs.splice(+i,1);save();render()}};
+setInterval(updSince,30000);
+render();
+</script>
+</body>
+</html>
